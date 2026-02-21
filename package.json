@@ -1,0 +1,18 @@
+{
+  "name": "skvil-piertotum",
+  "version": "1.0.0",
+  "description": "MCP server para comunicação entre instâncias do Claude Code",
+  "type": "module",
+  "bin": {
+    "skvil-piertotum-broker": "./broker.js",
+    "skvil-piertotum-mcp": "./mcp-server.js"
+  },
+  "scripts": {
+    "broker": "node broker.js",
+    "broker:dev": "node --watch broker.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "express": "^4.21.2"
+  }
+}
