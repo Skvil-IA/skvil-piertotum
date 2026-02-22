@@ -11,8 +11,6 @@
 
 Skvil-Piertotum is a lightweight MCP + HTTP broker that connects multiple Claude Code terminals — across projects, machines, WSL, or VMs — so they can exchange messages, share context, and even delegate tasks autonomously.
 
-</div>
-
 ```
 Claude Code (API project)          Claude Code (Frontend project)
       │                                       │
@@ -28,6 +26,8 @@ Claude Code (API project)          Claude Code (Frontend project)
               │  agents     │
               └─────────────┘
 ```
+
+</div>
 
 ---
 
@@ -66,11 +66,11 @@ npm install
 Run this once, on any machine accessible to your terminals:
 
 ```bash
-# if installed via npm:
+# if installed globally:
 skvil-piertotum-broker
 
-# or with npx (no install needed):
-npx @skvil/piertotum skvil-piertotum-broker
+# without installing (npx):
+npx --package=@skvil/piertotum skvil-piertotum-broker
 
 # custom port:
 skvil-piertotum-broker 5000
@@ -105,7 +105,8 @@ claude mcp add skvil-piertotum \
   -- skvil-piertotum-mcp
 ```
 
-> No global install? Use `npx @skvil/piertotum skvil-piertotum-mcp` instead of `skvil-piertotum-mcp`.
+> Not installed globally? Replace `skvil-piertotum-mcp` with:
+> `npx --package=@skvil/piertotum skvil-piertotum-mcp`
 
 If everything is on the same machine, use `BROKER_URL=http://localhost:4800`.
 
@@ -117,7 +118,6 @@ If everything is on the same machine, use `BROKER_URL=http://localhost:4800`.
     "skvil-piertotum": {
       "type": "stdio",
       "command": "skvil-piertotum-mcp",
-      "args": [],
       "env": {
         "BROKER_URL": "http://192.168.1.10:4800",
         "AGENT_ID": "api",
@@ -238,7 +238,7 @@ Enable autonomous processing mode
 
 Agents broadcast their availability via shared context under `{AGENT_ID}-status`:
 - `idle` — ready to receive tasks
-- `busy | task: ... | início: HH:MM:SS` — working
+- `busy | task: ... | start: HH:MM:SS` — working
 - `offline` — gracefully shut down
 
 > **Requirements:** The Claude Code client must support MCP Sampling. If it doesn't, the mode disables itself automatically and reports the reason in `sp_status`.
@@ -301,7 +301,7 @@ GET    /status                      Broker overview
 ## Design Notes
 
 - **In-memory only** — all state is lost if the broker restarts. Agents re-register automatically on the next heartbeat (within 30s). For persistence, adapt the broker to use SQLite.
-- **Resource limits** — max 100 agents, 200 messages per queue (oldest dropped), 1000 context keys, 100 KB per context value.
+- **Resource limits** — max 100 agents, 200 messages per queue (oldest dropped), 1000 context keys, 100 KB per context value, 512 KB per message.
 - **Stale agent cleanup** — agents that miss 3 heartbeats (90s) are automatically removed.
 - **Message types** — `text`, `code`, `schema`, `endpoint`, `config`. Used by agents to route and handle responses appropriately.
 - **Prompt injection protection** — in autonomous mode, incoming message content is wrapped in XML tags with a random nonce before being injected into Claude's context.
