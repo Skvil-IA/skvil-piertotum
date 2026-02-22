@@ -48,7 +48,7 @@ function validateBrokerUrl(raw) {
 }
 
 const BROKER_URL   = validateBrokerUrl(process.env.BROKER_URL || 'http://localhost:4800').replace(/\/+$/, '');
-const AGENT_ID     = process.env.AGENT_ID || os.hostname().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+const AGENT_ID     = (process.env.AGENT_ID || os.hostname()).toLowerCase().replace(/[^a-z0-9-]/g, '-');
 const AGENT_NAME   = process.env.AGENT_NAME || `SP-${AGENT_ID}`;
 const PROJECT_NAME = process.env.PROJECT_NAME || 'unknown';
 
@@ -83,7 +83,7 @@ function formatUptime(seconds) {
 function formatLastSeen(lastSeenIso) {
   if (!lastSeenIso) return 'desconhecido';
   const diffMs = Date.now() - new Date(lastSeenIso).getTime();
-  const diffS  = Math.floor(diffMs / 1000);
+  const diffS  = Math.max(0, Math.floor(diffMs / 1000));
   if (diffS < 60) return `há ${diffS}s`;
   const diffM  = Math.floor(diffS / 60);
   if (diffM < 60) return `há ${diffM}min`;
@@ -201,6 +201,9 @@ server.tool(
       return { content: [{ type: 'text', text: `❌ ${result.error}` }] };
     }
 
+    if (!result.agents) {
+      return { content: [{ type: 'text', text: '⚠️  Resposta inesperada do broker' }] };
+    }
     if (result.agents.length === 0) {
       return { content: [{ type: 'text', text: '📭 Nenhum agente registrado.' }] };
     }
@@ -402,6 +405,9 @@ server.tool(
       return { content: [{ type: 'text', text: `❌ ${result.error}` }] };
     }
 
+    if (!result.contexts) {
+      return { content: [{ type: 'text', text: '⚠️  Resposta inesperada do broker' }] };
+    }
     if (result.contexts.length === 0) {
       return { content: [{ type: 'text', text: '📭 Nenhum contexto compartilhado.' }] };
     }
@@ -455,7 +461,7 @@ server.tool(
       return { content: [{ type: 'text', text: `❌ ${result.error}` }] };
     }
 
-    const agentLines = result.agents.map(a =>
+    const agentLines = (result.agents || []).map(a =>
       `  • ${a.name} (${a.agentId}) — ${a.project} — ${a.unreadMessages} msgs não lidas`
     );
 

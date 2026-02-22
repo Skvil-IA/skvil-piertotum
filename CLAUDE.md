@@ -102,9 +102,10 @@ When `AUTO_PROCESS=true`, `pollAndProcess()` runs every `POLL_INTERVAL_MS`:
    - Sets `{AGENT_ID}-status` context to `busy | task: ... | início: HH:MM:SS`
    - Calls `server.server.createMessage()` with the message wrapped in XML nonce delimiters (prompt injection protection)
    - Sends Claude's response back to the sender
-   - ACKs the message individually via `POST /messages/:id/ack`
    - Sets status back to `idle`
-4. Breaks the loop early if autonomous mode is self-disabled mid-batch (avoids ACKing unprocessed messages)
+   - ACKs the message individually via `POST /messages/:agentId/ack`
+4. Even on processing errors, the message is ACKed to prevent poison message loops
+5. Breaks the loop early if autonomous mode is self-disabled mid-batch
 
 Only one poll runs at a time (`isProcessing` flag set before the first `await`). RESET messages (`/^RESET[\s:]/`) skip sampling and reply with `RESET ACK` immediately.
 

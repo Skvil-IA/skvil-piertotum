@@ -125,6 +125,9 @@ app.post('/agents/register', (req, res) => {
   if (typeof agentId !== 'string' || typeof name !== 'string') {
     return res.status(400).json({ error: 'agentId e name devem ser strings' });
   }
+  if (agentId.length > 64 || name.length > 128) {
+    return res.status(400).json({ error: 'agentId (máx 64) ou name (máx 128) excede o limite' });
+  }
 
   if (!agents.has(agentId) && agents.size >= MAX_AGENTS) {
     return res.status(429).json({ error: `Limite de ${MAX_AGENTS} agentes atingido` });
@@ -317,6 +320,12 @@ app.post('/context', (req, res) => {
   if (!key || value === undefined || value === null) {
     return res.status(400).json({ error: 'key e value são obrigatórios' });
   }
+  if (typeof key !== 'string') {
+    return res.status(400).json({ error: 'key deve ser uma string' });
+  }
+  if (key.length > 256) {
+    return res.status(400).json({ error: 'key deve ter no máximo 256 caracteres' });
+  }
 
   if (Buffer.byteLength(JSON.stringify(value), 'utf8') > MAX_CONTEXT_VALUE_SIZE) {
     return res.status(413).json({ error: `Valor excede o limite de ${MAX_CONTEXT_VALUE_SIZE / 1024}KB` });
@@ -383,7 +392,8 @@ app.get('/status', (req, res) => {
 // ══════════════════════════════════════════════
 
 app.use((req, res) => {
-  res.status(404).json({ error: `Rota não encontrada: ${req.method} ${req.path}` });
+  const safePath = req.path.replace(/[\x00-\x1f\x7f]/g, '');
+  res.status(404).json({ error: `Rota não encontrada: ${req.method} ${safePath}` });
 });
 
 // Error handler — retorna JSON em vez de HTML (ex: body JSON malformado)
