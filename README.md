@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/LCGF00/skvil-piertotum/main/logo.png" width="150" alt="Skvil-Piertotum logo" />
+  <img src="https://raw.githubusercontent.com/Skvil-IA/skvil-piertotum/main/logo.png" width="150" alt="Skvil-Piertotum logo" />
 
 # Skvil-Piertotum
 
@@ -56,7 +56,7 @@ npm install -g @skvil/piertotum
 
 **Option B — from source:**
 ```bash
-git clone https://github.com/LCGF00/skvil-piertotum
+git clone https://github.com/Skvil-IA/skvil-piertotum
 cd skvil-piertotum
 npm install
 ```

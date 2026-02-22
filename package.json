@@ -1,17 +1,17 @@
 {
   "name": "@skvil/piertotum",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "MCP + HTTP broker for multi-instance Claude Code communication",
   "type": "module",
   "license": "MIT",
   "author": "LCGF00",
-  "homepage": "https://github.com/LCGF00/skvil-piertotum#readme",
+  "homepage": "https://github.com/Skvil-IA/skvil-piertotum#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/LCGF00/skvil-piertotum.git"
+    "url": "git+https://github.com/Skvil-IA/skvil-piertotum.git"
   },
   "bugs": {
-    "url": "https://github.com/LCGF00/skvil-piertotum/issues"
+    "url": "https://github.com/Skvil-IA/skvil-piertotum/issues"
   },
   "keywords": [
     "mcp",
