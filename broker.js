@@ -14,15 +14,20 @@ import express from 'express';
 import readline from 'readline';
 
 // ══════════════════════════════════════════════
-// Handlers globais de erro — evitam crash silencioso
+// Handlers globais de erro
+// uncaughtException: loga o stack completo e sai — continuar após
+// uma exceção não capturada deixa o processo em estado indefinido.
+// Deixe o process manager (systemd, Docker, PM2) reiniciar.
 // ══════════════════════════════════════════════
 
 process.on('uncaughtException', (err) => {
-  console.error(`[FATAL] Exceção não capturada: ${err.message}`);
+  console.error(`[FATAL] Exceção não capturada:\n${err.stack}`);
+  process.exit(1);
 });
 
 process.on('unhandledRejection', (reason) => {
-  console.error(`[FATAL] Promise rejeitada sem handler: ${reason}`);
+  console.error(`[FATAL] Promise rejeitada sem handler: ${reason instanceof Error ? reason.stack : reason}`);
+  process.exit(1);
 });
 
 const app = express();
@@ -34,11 +39,12 @@ const PORT = process.env.BROKER_PORT || process.argv[2] || 4800;
 // Limites de recursos
 // ══════════════════════════════════════════════
 
-const MAX_MESSAGES_PER_AGENT  = 200;
-const MAX_AGENTS              = 100;
-const MAX_CONTEXT_KEYS        = 1000;
-const MAX_CONTEXT_VALUE_SIZE  = 100 * 1024; // 100 KB
-const STALE_AGENT_THRESHOLD_MS = 90_000;    // 3 heartbeats perdidos (heartbeat = 30s)
+const MAX_MESSAGES_PER_AGENT    = 200;
+const MAX_AGENTS                = 100;
+const MAX_CONTEXT_KEYS          = 1000;
+const MAX_CONTEXT_VALUE_SIZE    = 100 * 1024; // 100 KB
+const MAX_MESSAGE_CONTENT_SIZE  = 512 * 1024; // 512 KB por mensagem
+const STALE_AGENT_THRESHOLD_MS  = 90_000;    // 3 heartbeats perdidos (heartbeat = 30s)
 
 // ══════════════════════════════════════════════
 // Estado em memória
@@ -185,8 +191,16 @@ app.post('/messages/send', (req, res) => {
     return res.status(400).json({ error: 'from, to e content são obrigatórios' });
   }
 
+  if (!agents.has(from) && from !== 'broker') {
+    return res.status(400).json({ error: `Remetente "${from}" não registrado. Registre-se antes de enviar mensagens.` });
+  }
+
   if (!agents.has(to)) {
     return res.status(404).json({ error: `Agente "${to}" não encontrado` });
+  }
+
+  if (Buffer.byteLength(content, 'utf8') > MAX_MESSAGE_CONTENT_SIZE) {
+    return res.status(413).json({ error: `Conteúdo excede o limite de ${MAX_MESSAGE_CONTENT_SIZE / 1024}KB por mensagem` });
   }
 
   const msgType = VALID_MSG_TYPES.has(type) ? type : 'text';
@@ -212,6 +226,14 @@ app.post('/messages/broadcast', (req, res) => {
   const { from, content, type } = req.body;
   if (!from || !content) {
     return res.status(400).json({ error: 'from e content são obrigatórios' });
+  }
+
+  if (!agents.has(from) && from !== 'broker') {
+    return res.status(400).json({ error: `Remetente "${from}" não registrado. Registre-se antes de enviar mensagens.` });
+  }
+
+  if (Buffer.byteLength(content, 'utf8') > MAX_MESSAGE_CONTENT_SIZE) {
+    return res.status(413).json({ error: `Conteúdo excede o limite de ${MAX_MESSAGE_CONTENT_SIZE / 1024}KB por mensagem` });
   }
 
   const msgType = VALID_MSG_TYPES.has(type) ? type : 'text';
@@ -275,7 +297,7 @@ app.post('/context', (req, res) => {
     return res.status(400).json({ error: 'key e value são obrigatórios' });
   }
 
-  if (typeof value === 'string' && value.length > MAX_CONTEXT_VALUE_SIZE) {
+  if (Buffer.byteLength(JSON.stringify(value), 'utf8') > MAX_CONTEXT_VALUE_SIZE) {
     return res.status(413).json({ error: `Valor excede o limite de ${MAX_CONTEXT_VALUE_SIZE / 1024}KB` });
   }
 
@@ -478,3 +500,21 @@ httpServer.on('error', (err) => {
   }
   process.exit(1);
 });
+
+// ══════════════════════════════════════════════
+// Shutdown gracioso (SIGTERM / SIGINT)
+// ══════════════════════════════════════════════
+
+const shutdown = () => {
+  _log('\n  🛑 Broker encerrando...');
+  if (rl) rl.close();
+  httpServer.close(() => {
+    _log('  Broker encerrado.');
+    process.exit(0);
+  });
+  // Força saída se o servidor não fechar em 5s (conexões keep-alive pendentes)
+  setTimeout(() => process.exit(1), 5000).unref();
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT',  shutdown);

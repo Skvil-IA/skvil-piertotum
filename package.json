@@ -1,8 +1,35 @@
 {
   "name": "skvil-piertotum",
   "version": "1.0.0",
-  "description": "MCP server para comunicação entre instâncias do Claude Code",
+  "description": "MCP + HTTP broker for multi-instance Claude Code communication",
   "type": "module",
+  "license": "MIT",
+  "author": "LCGF00",
+  "homepage": "https://github.com/LCGF00/skvil-piertotum#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LCGF00/skvil-piertotum.git"
+  },
+  "keywords": [
+    "mcp",
+    "claude",
+    "claude-code",
+    "multi-agent",
+    "llm",
+    "ai",
+    "broker",
+    "ipc",
+    "anthropic"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "broker.js",
+    "mcp-server.js",
+    "README.md",
+    "LICENSE"
+  ],
   "bin": {
     "skvil-piertotum-broker": "./broker.js",
     "skvil-piertotum-mcp": "./mcp-server.js"
@@ -12,7 +39,8 @@
     "broker:dev": "node --watch broker.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.1",
-    "express": "^4.21.2"
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "express": "^4.21.2",
+    "zod": "^4.3.6"
   }
 }

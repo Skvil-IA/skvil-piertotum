@@ -656,6 +656,7 @@ async function pollAndProcess() {
 function startAutonomousMode() {
   if (pollTimer) return; // já rodando
   process.stderr.write(`🤖 Modo autônomo ativado — polling a cada ${POLL_INTERVAL_MS / 1000}s\n`);
+  pollAndProcess(); // primeiro poll imediato — não espera o intervalo completo
   pollTimer = setInterval(pollAndProcess, POLL_INTERVAL_MS);
 }
 
@@ -691,7 +692,7 @@ async function main() {
   const heartbeatTimer = setInterval(async () => {
     const hb = await brokerFetch(`/agents/${AGENT_ID}/heartbeat`, { method: 'POST' });
     if (hb.error) {
-      const notRegistered = hb.error.includes('não registrado') || hb.error.includes('HTTP 404');
+      const notRegistered = hb.error.includes('HTTP 404');
       if (notRegistered) {
         // Broker reiniciou e perdeu o estado — re-registrar automaticamente
         process.stderr.write(`⚠️  Heartbeat: agente não reconhecido pelo broker, re-registrando...\n`);

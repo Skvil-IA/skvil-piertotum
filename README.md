@@ -3,6 +3,10 @@
 
 # Skvil-Piertotum
 
+[![npm version](https://img.shields.io/npm/v/skvil-piertotum)](https://www.npmjs.com/package/skvil-piertotum)
+[![Node.js](https://img.shields.io/node/v/skvil-piertotum)](https://nodejs.org)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
 **Let your Claude Code instances talk to each other.**
 
 Skvil-Piertotum is a lightweight MCP + HTTP broker that connects multiple Claude Code terminals — across projects, machines, WSL, or VMs — so they can exchange messages, share context, and even delegate tasks autonomously.
@@ -43,8 +47,10 @@ When `AUTO_PROCESS=true`, the MCP server polls for incoming messages and uses **
 
 ### 1. Install
 
+**Requirements:** Node.js 18 or later (`node --version` to check).
+
 ```bash
-git clone https://github.com/your-username/skvil-piertotum
+git clone https://github.com/LCGF00/skvil-piertotum
 cd skvil-piertotum
 npm install
 ```
@@ -304,6 +310,14 @@ An orchestrator terminal delegates tasks to worker terminals. Workers report sta
 Each developer registers their terminal. Share schemas, decisions, and context across the team in real time — without copy-pasting into chat.
 
 ---
+
+## Contributing
+
+Issues and pull requests are welcome. For non-trivial changes, please open an issue first to discuss the approach.
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
 
 ## References
 
