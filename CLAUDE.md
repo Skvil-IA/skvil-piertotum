@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Skvil-Piertotum** is a two-component system that lets multiple Claude Code instances communicate over HTTP. A central broker (`broker.js`) holds all state in memory and exposes a REST API. Each Claude Code instance runs `mcp-server.js` as an MCP stdio server, which registers with the broker and exposes 10 tools for sending/receiving messages and sharing context.
+**Skvil-Piertotum** (`@skvil/piertotum` on npm) is a two-component system that lets multiple Claude Code instances communicate over HTTP. A central broker (`broker.js`) holds all state in memory and exposes a REST API. Each Claude Code instance runs `mcp-server.js` as an MCP stdio server, which registers with the broker and exposes 10 tools for sending/receiving messages and sharing context.
 
 ## Running the Project
 
@@ -22,6 +22,12 @@ node broker.js 5000
 BROKER_URL=http://localhost:4800 AGENT_ID=api AGENT_NAME="API Server" PROJECT_NAME=myproject node mcp-server.js
 ```
 
+When installed globally (`npm i -g @skvil/piertotum`), two CLI binaries are available:
+- `skvil-piertotum-broker` — starts the broker
+- `skvil-piertotum-mcp` — starts the MCP server
+
+**No tests or lint** — validate changes by running `node broker.js` and `node mcp-server.js` manually.
+
 ## Architecture
 
 ```
@@ -32,9 +38,11 @@ Broker terminal (operator types commands/messages)
    (in-memory state)                   mcp-server.js (Instance B)
 ```
 
-**`broker.js`** — Express HTTP server. Holds agents, message queues (Map per agentId), and shared context (key/value Map) entirely in memory. Also runs a readline console: plain text broadcasts to all agents, `@agentId message` targets one, `/agents` and `/help` are available commands.
+**`broker.js`** — Express HTTP server. Holds agents, message queues (Map per agentId), and shared context (key/value Map) entirely in memory. Also runs a readline console: plain text broadcasts to all agents, `@agentId message` targets one, `/agents` and `/help` are available commands. Intercepts `console.log/error/warn` to avoid overwriting the readline prompt.
 
-**`mcp-server.js`** — MCP stdio server per Claude Code instance. Auto-registers on startup, heartbeats every 30s (auto re-registers on 404 to recover from broker restarts), deregisters gracefully on SIGTERM/SIGINT.
+**`mcp-server.js`** — MCP stdio server per Claude Code instance. Auto-registers on startup, heartbeats every 30s (auto re-registers on 404 to recover from broker restarts), deregisters gracefully on SIGTERM/SIGINT. Uses `@modelcontextprotocol/sdk` for MCP protocol and `zod` for tool parameter validation.
+
+**Critical:** `mcp-server.js` uses stdout exclusively for MCP stdio transport. All logging/diagnostics MUST use `process.stderr.write()`, never `console.log`.
 
 ## Environment Variables
 
@@ -94,12 +102,12 @@ Orchestrators should call `sp_get_context("{agent_id}-status")` before delegatin
 
 - **Language** — all comments, error messages, tool descriptions, and console output are in **Brazilian Portuguese**.
 - **ES modules** — both files use `import/export` (`"type": "module"` in `package.json`).
-- **No tests or lint** — no test or lint scripts are defined. Validate changes by running `node broker.js` and `node mcp-server.js` manually.
 - **Two-file codebase** — all logic lives in `broker.js` and `mcp-server.js`. No build step.
+- **Dependencies** — Express (HTTP server), `@modelcontextprotocol/sdk` (MCP protocol), `zod` (schema validation).
 
 ## Key Design Decisions
 
-- **In-memory only** — all state lost on broker restart. Heartbeat auto re-registers agents within 30s. Max 200 messages/queue (oldest dropped), 100 agents, 1000 context keys, 100 KB/value.
+- **In-memory only** — all state lost on broker restart. Heartbeat auto re-registers agents within 30s. Max 200 messages/queue (oldest dropped), 100 agents, 1000 context keys, 100 KB/value, 512 KB/message.
 - **Separate read/ACK** — `GET /messages` never auto-marks as read. Clients call `POST /messages/:agentId/ack` with explicit message IDs after successful processing. `sp_read` does this automatically.
 - **Stale agent reaper** — runs every 30s; removes agents with no heartbeat for >90s (3 missed intervals). `sp_list_agents` flags agents >60s as stale before the reaper removes them.
 - **Message types enum** — `text`, `code`, `schema`, `endpoint`, `config`. Type `broadcast` was intentionally removed (was dead code).
